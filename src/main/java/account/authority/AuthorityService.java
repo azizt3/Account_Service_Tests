@@ -1,12 +1,9 @@
 package account.authority;
 
-import account.businesslayer.entity.Authority;
-import account.businesslayer.exceptions.InvalidChangeException;
-import account.businesslayer.exceptions.NotFoundException;
-import account.businesslayer.request.RoleChangeRequest;
-import account.businesslayer.response.ErrorMessage;
-import account.persistencelayer.AuthorityRepository;
-import account.persistencelayer.UserRepository;
+import account.exceptionhandling.InvalidChangeException;
+import account.exceptionhandling.NotFoundException;
+import account.exceptionhandling.ErrorMessage;
+import account.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

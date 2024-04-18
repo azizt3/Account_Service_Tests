@@ -1,23 +1,15 @@
-import account.businesslayer.PaymentService;
-import account.businesslayer.UserService;
-import account.businesslayer.dto.PaymentDto;
-import account.businesslayer.dto.UserAdapter;
-import account.businesslayer.dto.UserDto;
-import account.businesslayer.entity.Payment;
-import account.businesslayer.entity.User;
-import account.persistencelayer.PaymentRepository;
+import account.payment.PaymentService;
+import account.user.UserService;
+import account.user.dto.UserDto;
+import account.user.User;
+import account.payment.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.print.DocFlavor;
-import java.text.ParseException;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentServiceTest {
