@@ -1,10 +1,10 @@
 package account.authority;
 
-import account.businesslayer.UserService;
 import account.businesslayer.entity.Authority;
 import account.businesslayer.exceptions.InvalidChangeException;
 import account.businesslayer.exceptions.NotFoundException;
 import account.businesslayer.request.RoleChangeRequest;
+import account.businesslayer.response.ErrorMessage;
 import account.persistencelayer.AuthorityRepository;
 import account.persistencelayer.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,12 +23,12 @@ public class AuthorityService {
 
     public Set<Authority> setAuthority(){
         return userRepository.count() > 0 ?
-                Set.of(getAuthoritybyRole("ROLE_USER")):Set.of(getAuthoritybyRole("ROLE_ADMINISTRATOR"));
+                Set.of(getAuthoritybyRole(Role.USER)):Set.of(getAuthoritybyRole(Role.ADMINISTRATOR));
     }
 
     public Authority getAuthoritybyRole(String role){
         return authorityRepository.findByRole(role)
-        .orElseThrow(() -> new RuntimeException("Not found"));
+        .orElseThrow(() -> new NotFoundException(ErrorMessage.ROLE_NOT_FOUND));
     }
 
     public Set<Authority> modifyUserAuthority (Set<Authority> currentAuthority, RoleChangeRequest request) {
@@ -41,23 +41,25 @@ public class AuthorityService {
     public void validateNoRoleConflict(Set<Authority> currentAuthorities, Authority newAuthority) {
         for (Authority authority : currentAuthorities) {
             if (!authority.getRoleGroup().equalsIgnoreCase(newAuthority.getRoleGroup()))
-                throw new InvalidChangeException("The user cannot combine administrative and business roles!");
+                throw new InvalidChangeException(ErrorMessage.CONFLICTING_ROLE_ASSIGNMENT);
         }
     }
 
     public void validateRoleExists(String role) {
-        if (!authorityRepository.existsByRole(role)) throw new NotFoundException("Role not found!");
+        if (!authorityRepository.existsByRole(role)) {
+            throw new NotFoundException(ErrorMessage.ROLE_NOT_FOUND);
+        }
     }
 
     public void validateRoleRemoval(RoleChangeRequest request, Set<Authority> currentAuthorities) {
-        if (request.role().equalsIgnoreCase("ROLE_ADMINISTRATOR")) {
-            throw new InvalidChangeException("Can't remove ADMINISTRATOR role!");
+        if (request.role().equalsIgnoreCase(Role.ADMINISTRATOR)) {
+            throw new InvalidChangeException(ErrorMessage.REMOVING_ADMIN_ROLE);
         }
         if (!currentAuthorities.contains(getAuthoritybyRole(request.role()))) {
-            throw new InvalidChangeException("The user does not have a role!");
+            throw new InvalidChangeException(ErrorMessage.REMOVING_UNASSIGNED_ROLE);
         }
         if (currentAuthorities.size() < 2) {
-            throw new InvalidChangeException("The user must have at least one role!");
+            throw new InvalidChangeException(ErrorMessage.REMOVING_ONLY_ROLE);
         }
     }
 }

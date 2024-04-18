@@ -1,6 +1,7 @@
 package account;
 
 import account.businesslayer.exceptions.InsufficientPasswordException;
+import account.businesslayer.response.ErrorMessage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,7 @@ public class BreachedPasswords {
     public void validatePasswordBreached (String newPassword){
         for (String pass : breachedPasswords) {
             if (passwordEncoder().matches(newPassword, pass)) {
-                throw new InsufficientPasswordException("The password is in the hacker's database!");
+                throw new InsufficientPasswordException(ErrorMessage.BREACHED_PASSWORD);
             }
         }
     }

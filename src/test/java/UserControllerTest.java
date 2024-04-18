@@ -13,31 +13,22 @@ import account.businesslayer.request.RoleChangeRequest;
 import account.businesslayer.request.UserRegistrationRequest;
 import account.presentationlayer.UserController;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.h2.util.json.JSONString;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.internal.hamcrest.HamcrestArgumentMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 
-import java.nio.file.AccessDeniedException;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.*;
@@ -202,7 +193,7 @@ public class UserControllerTest {
             "tabbish.aziz@acme.com",
             "Canada2024!", authorities);
 
-        UserAdapter user = new UserAdapter(adminUser, null);
+        UserAdapter user = new UserAdapter(adminUser);
 
         UserDto[] allUsers = new UserDto[]{userA, userB, userC};
         when(userService.handleGetUsers()).thenReturn(allUsers);

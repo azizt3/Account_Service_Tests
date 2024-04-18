@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 
-public record PaymentAddRequest(
+public record PaymentRequest(
     @NotBlank
     @Email
     String employee,

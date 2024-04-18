@@ -2,9 +2,13 @@ package account.businesslayer.dto;
 
 import account.businesslayer.entity.User;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserAdapter implements UserDetails {
     private User user;
@@ -17,13 +21,27 @@ public class UserAdapter implements UserDetails {
     public UserAdapter() {
     }
 
-    public UserAdapter(User user, Collection <? extends GrantedAuthority> authority) {
+    public UserAdapter(User user) {
         this.user = user;
         this.id = user.getId();
         this.name = user.getName();
         this.lastname = user.getLastname();
         this.email = user.getEmail();
-        this.authority = authority;
+        this.authority = getUserAuthorities(user);
+    }
+
+    public List<String> getRoles(User user) {
+        return user.getAuthorities()
+                .stream()
+                .map(authority -> authority.getRole())
+                .sorted()
+                .toList();
+    }
+
+    private Collection<? extends GrantedAuthority> getUserAuthorities(User user) {
+        return getRoles(user).stream()
+                .map(role -> new SimpleGrantedAuthority(role))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Override

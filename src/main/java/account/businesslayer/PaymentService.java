@@ -4,15 +4,15 @@ import account.businesslayer.dto.PaymentDto;
 import account.businesslayer.dto.PaymentPostedDto;
 import account.businesslayer.dto.UserAdapter;
 import account.businesslayer.entity.Payment;
+import account.businesslayer.entity.User;
 import account.businesslayer.exceptions.InvalidPaymentException;
-import account.businesslayer.exceptions.PaymentDoesNotExistException;
+import account.businesslayer.exceptions.NotFoundException;
 import account.businesslayer.exceptions.PaymentExistsException;
-import account.businesslayer.request.PaymentAddRequest;
+import account.businesslayer.request.PaymentRequest;
 import account.persistencelayer.PaymentRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
@@ -33,43 +33,49 @@ public class PaymentService {
     }
 
     //Business logic
-    public ResponseEntity<PaymentDto> handleGetPayment(String period, UserAdapter user) throws ParseException {
+    public PaymentDto handleGetPayment(String period) throws ParseException {
+
+        User user = getAuthenticatedUser();
         userService.validateUserExists(user.getEmail());
-        Payment payment = paymentRepository.findByEmployeeAndPeriod(user.getEmail().toLowerCase(), period);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(buildPaymentDto(payment, user));
+        Payment payment = paymentRepository.findByEmployeeAndPeriod(user.getEmail().toLowerCase(), period)
+                .orElseThrow(() -> new NotFoundException("Payment does not exist for this pay period"));
+        return buildPaymentDto(payment, new UserAdapter(user));
     }
 
-    public ResponseEntity<PaymentDto[]> handleGetAllPayments(UserAdapter user) throws ParseException{
+    private User getAuthenticatedUser() {
+        String userName = SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getName();
+        User user =  userService.loadUser((userName));
+        return user;
+    }
+
+    public PaymentDto[] handleGetAllPayments() throws ParseException{
+        User user = getAuthenticatedUser();
         userService.validateUserExists(user.getEmail());
         List<Payment> allPayments = paymentRepository.findByEmployeeOrderByPeriodDesc(user.getEmail().toLowerCase());
-        PaymentDto[] paymentDto = allPayments.stream()
-                .map(payment -> buildPaymentDto(payment, user))
+        return allPayments.stream()
+                .map(payment -> buildPaymentDto(payment, new UserAdapter(user)))
                 .toList().toArray(new PaymentDto[0]);
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(paymentDto);
     }
 
     @Transactional
-    public Payment postPayment (PaymentAddRequest payment) {
-        Payment postedPayment = new Payment(payment.employee(), payment.period(), payment.salary());
-        paymentRepository.save(postedPayment);
-        return postedPayment;
+    public PaymentPostedDto postPayment (PaymentRequest payments) {
+        validatePaymentAdd(payments);
+        Payment payment = new Payment(payments.employee(), payments.period(), payments.salary());
+        paymentRepository.save(payment);
+        return new PaymentPostedDto("Added Successfully");
     }
 
     @Transactional
-    public ResponseEntity<PaymentPostedDto> updatePayment (PaymentAddRequest payment) {
+    public PaymentPostedDto handlePaymentUpdate(PaymentRequest payment) {
         userService.validateUserExists(payment.employee());
         validatePaymentPositive(payment.salary());
-        Payment updatedPayment = paymentRepository.findByEmployeeAndPeriod(payment.employee(), payment.period());
+        Payment updatedPayment = paymentRepository.findByEmployeeAndPeriod(payment.employee(), payment.period())
+                .orElseThrow(() -> new NotFoundException("Payment does not exist for this pay period"));
         updatedPayment.setSalary(payment.salary());
         paymentRepository.save(updatedPayment);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new PaymentPostedDto("Added successfully!"));
+        return new PaymentPostedDto("Added successfully!");
     }
 
     public PaymentDto buildPaymentDto(Payment payment, UserAdapter user) {
@@ -102,13 +108,13 @@ public class PaymentService {
 
     //Validation Methods
 
-    public void validatePaymentAdd(PaymentAddRequest payment){
+    public void validatePaymentAdd(PaymentRequest payment){
         validatePaymentPositive(payment.salary());
         validateUniquePayment(payment);
         userService.validateUserExists(payment.employee());
     }
 
-    public void validateUniquePayment(PaymentAddRequest payment) {
+    public void validateUniquePayment(PaymentRequest payment) {
         if (paymentRepository.existsByEmployeeAndPeriod(payment.employee(), payment.period())) {
             throw new PaymentExistsException("Cannot add duplicate payment");
         }

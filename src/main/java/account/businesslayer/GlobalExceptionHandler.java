@@ -5,7 +5,6 @@ import account.businesslayer.response.CustomErrorMessage;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import org.h2.command.dml.Set;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.boot.actuate.autoconfigure.observation.ObservationProperties;
 import org.springframework.http.HttpHeaders;
@@ -29,7 +28,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
         MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        return new ResponseEntity<>(buildErrorMessage(extractValidationMessage(ex), request), status);
+        return new ResponseEntity<>(buildErrorMessage(extractValidationMessage(ex), HttpStatus.BAD_REQUEST, request), status);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -41,55 +40,55 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String errorMessage = violations.stream()
             .map(violation -> builder.append(" " + violation.getMessage()))
             .toString();
-        return new ResponseEntity<>(buildErrorMessage(errorMessage, request), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(buildErrorMessage(errorMessage, HttpStatus.BAD_REQUEST, request), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(InsufficientPasswordException.class)
     public ResponseEntity<CustomErrorMessage> handleInsufficientPasswordException(
         InsufficientPasswordException ex, WebRequest request) {
-        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), request), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), HttpStatus.BAD_REQUEST, request), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(PaymentDoesNotExistException.class)
     public ResponseEntity<CustomErrorMessage> handlePaymentDoesNotExistException(
         PaymentDoesNotExistException ex, HttpStatus status, WebRequest request) {
-        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), request), status);
+        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), HttpStatus.BAD_REQUEST, request), status);
     }
 
     @ExceptionHandler(UserExistsException.class)
     public ResponseEntity<CustomErrorMessage> handleUserExistsException(
         UserExistsException ex, WebRequest request) {
-        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), request), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), HttpStatus.BAD_REQUEST, request), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(InvalidChangeException.class)
     public ResponseEntity<CustomErrorMessage> handleInvalidChangeException(
-        InvalidChangeException ex, HttpStatus status, WebRequest request) {
-        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), request), status);
+        InvalidChangeException ex, WebRequest request) {
+        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), HttpStatus.BAD_REQUEST, request), HttpStatus.BAD_REQUEST);
     }
 
 
     @ExceptionHandler(PaymentExistsException.class)
     public ResponseEntity<CustomErrorMessage> handlePaymentExistsException(
         PaymentExistsException ex, HttpStatus status, WebRequest request) {
-        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), request), status);
+        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), HttpStatus.BAD_REQUEST, request), status);
     }
 
     @ExceptionHandler(AuthorizationViolationException.class)
     public ResponseEntity<CustomErrorMessage> handleAuthorizationViolationException(
         AuthorizationViolationException ex, HttpStatus status, WebRequest request) {
-        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), request), status);
+        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), HttpStatus.FORBIDDEN, request), status);
     }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<CustomErrorMessage> handleNotFoundException(
         NotFoundException ex, WebRequest request){
-        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), request), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(buildErrorMessage(ex.getMessage(), HttpStatus.NOT_FOUND, request), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public void handleAccessDeniedException (HttpServletResponse response) throws IOException {
-        response.sendError(403, "Access Denied!");
+        response.sendError(HttpStatus.FORBIDDEN.value(), "Access Denied!");
     }
 
     public String extractValidationMessage(Exception ex) {
@@ -99,13 +98,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return validationMessage.trim().replaceAll("default message \\[|]]", "");
     }
 
-    public CustomErrorMessage buildErrorMessage(String errorMessage, WebRequest request) {
+    public CustomErrorMessage buildErrorMessage(String errorMessage, HttpStatus status, WebRequest request) {
         return new CustomErrorMessage(
             LocalDateTime.now(),
-            HttpStatus.BAD_REQUEST.value(),
-            "Bad Request",
+            status.value(),
+            status.getReasonPhrase(),
             errorMessage,
             request.getDescription(false).trim().replaceAll("uri=", ""));
     }
+
+
 
 }

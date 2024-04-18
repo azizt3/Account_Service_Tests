@@ -15,7 +15,7 @@ public class Authority {
     @Column (name= "id")
     private Long id;
 
-    @Column (unique = true)
+    @Column
     private String role;
     //some identifier for the role
 

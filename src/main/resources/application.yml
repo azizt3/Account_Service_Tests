@@ -1,0 +1,18 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+
+  info:
+    env:
+      enabled: true
+  application:
+    name: account-service
+    description: account service application with basic CRUD functionality
+    author: tabbish aziz
+    version: 1
+
+spring:
+  profiles:
+    active: dev

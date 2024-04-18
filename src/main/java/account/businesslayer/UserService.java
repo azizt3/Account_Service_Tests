@@ -2,6 +2,7 @@ package account.businesslayer;
 
 import account.BreachedPasswords;
 import account.authority.AuthorityService;
+import account.authority.Role;
 import account.businesslayer.dto.UpdateSuccessfulDto;
 import account.businesslayer.dto.UserAdapter;
 import account.businesslayer.dto.UserDeletedDto;
@@ -14,14 +15,15 @@ import account.businesslayer.exceptions.NotFoundException;
 import account.businesslayer.exceptions.UserExistsException;
 import account.businesslayer.request.RoleChangeRequest;
 import account.businesslayer.request.UserRegistrationRequest;
+import account.businesslayer.response.ErrorMessage;
 import account.persistencelayer.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -38,6 +40,15 @@ public class UserService implements UserDetailsService {
     UserRepository userRepository;
     AuthorityService authorityService;
     BreachedPasswords breachedPasswords;
+
+    User userA = new User(
+            "tabbish",
+            "aziz",
+            "tabbish.aziz@acme.com",
+            "Canada2024!",
+            null
+    );
+
 
     @Autowired
     public UserService(UserRepository userRepository, BreachedPasswords breachedPasswords,
@@ -65,7 +76,7 @@ public class UserService implements UserDetailsService {
 
     public UserDto handleRoleChange(RoleChangeRequest request){
         User user = loadUser(request.user());
-        authorityService.validateRoleExists(request.role());
+        //authorityService.validateRoleExists(request.role());
         if (request.operation().equalsIgnoreCase("grant")) return handleRoleGrant(request, user);
         if (request.operation().equalsIgnoreCase("remove")) return handleRoleRemove(request, user);
         else throw new NotFoundException("Operation Doesn't Exist");
@@ -83,7 +94,7 @@ public class UserService implements UserDetailsService {
     }
 
     /*
-    * do nothing for the validate role removal (Assume it passes)
+    * do nothing for the validate role removal (Assume it passes)8
     * return the changed authority set when calling modify user authority
     * verify save method is invoked // Valid request test # 1
     * verify userDto matches expected value// valid request test #2
@@ -100,42 +111,40 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<UpdateSuccessfulDto> updatePassword(String newPassword, UserAdapter user) {
+    public UpdateSuccessfulDto updatePassword(String newPassword) {
+        String userName = SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getName();
+        User user =  loadUser((userName));
+
         validatePasswordLength(newPassword);
         validateUniquePassword(newPassword, user.getPassword());
         breachedPasswords.validatePasswordBreached(newPassword);
-
-        User updatedUser = loadUser(user.getEmail());
-        updatedUser.setPassword(passwordEncoder().encode(newPassword));
-        userRepository.save(updatedUser);
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new UpdateSuccessfulDto(user.getEmail(), "The password has been updated successfully"));
+        user.setPassword(passwordEncoder().encode(newPassword));
+        userRepository.save(user);
+        return new UpdateSuccessfulDto(user.getEmail(), "The password has been updated successfully");
     }
 
     @Transactional
-    public ResponseEntity<UserDeletedDto> handleUserDelete(String email) {
+    public UserDeletedDto handleUserDelete(String email) {
         User user = loadUser(email);
-        if (getRoles(user).contains("ROLE_ADMINISTRATOR")) {
-            throw new InvalidChangeException("Can't remove ADMINISTRATOR role!");
+        if (getRoles(user).contains(Role.ADMINISTRATOR)) {
+            throw new InvalidChangeException(ErrorMessage.REMOVING_ADMIN_ROLE);
         }
         userRepository.deleteByEmail(email);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new UserDeletedDto(email, "Deleted successfully!"));
+        return new UserDeletedDto(email, "Deleted successfully!");
     }
 
     public User loadUser (String email) {
         return userRepository.findByEmail(email.toLowerCase())
-                .orElseThrow(() -> new NotFoundException("User not found!"));
+                .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND));
     }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new UsernameNotFoundException(("")));
-        return new UserAdapter(user, getUserAuthorities(user));
+        return new UserAdapter(user/*, getUserAuthorities(user)*/);
     }
 
     private Collection<? extends GrantedAuthority> getUserAuthorities(User user) {
@@ -147,18 +156,20 @@ public class UserService implements UserDetailsService {
     //Validation Methods
 
     public void validateUniqueEmail(String email) {
-        if (userRepository.existsByEmail(email.toLowerCase())) throw new UserExistsException("User exist!");
+        if (userRepository.existsByEmail(email.toLowerCase())) {
+            throw new UserExistsException(ErrorMessage.USER_EXISTS);
+        }
     }
 
     public void validatePasswordLength(String newPassword) {
         if (newPassword.length() < 12) {
-            throw new InsufficientPasswordException("Password length must be 12 chars minimum!");
+            throw new InsufficientPasswordException(ErrorMessage.PASSWORD_TOO_SHORT);
         }
     }
 
     public void validateUniquePassword(String newPassword, String oldPassword) {
         if (passwordEncoder().matches(newPassword, oldPassword)) {
-            throw new InsufficientPasswordException("The passwords must be different!");
+            throw new InsufficientPasswordException(ErrorMessage.PASSWORD_NOT_UNIQUE);
         }
     }
 
@@ -167,9 +178,9 @@ public class UserService implements UserDetailsService {
         breachedPasswords.validatePasswordBreached(newPassword);
     }
 
-    void validateUserExists(String employee) {
+    public void validateUserExists(String employee) {
         if (!userRepository.existsByEmail(employee.toLowerCase())){
-            throw new NotFoundException("User not found!");
+            throw new NotFoundException(ErrorMessage.USER_NOT_FOUND);
         }
     }
 
@@ -183,7 +194,9 @@ public class UserService implements UserDetailsService {
             .toList();
     }
 
-    public User buildUser(UserRegistrationRequest newUser) {
+    //Any builder methods can be encapsulated into a helper/builder/factory class. Enables the
+
+    private User buildUser(UserRegistrationRequest newUser) {
         User user = new User(
                 newUser.name(),
                 newUser.lastname(),
@@ -193,7 +206,7 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public UserDto buildUserDto(User user) {
+    public UserDto  buildUserDto(User user) {
         return new UserDto(
             user.getId(),
             user.getName(),
