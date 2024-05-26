@@ -1,9 +1,7 @@
 package account.payment;
 
-import account.payment.PaymentService;
-import account.user.UserAdapter;
-import account.payment.dto.PaymentPostedDto;
 import account.payment.request.PaymentRequest;
+import account.user.UserAdapter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 public class PaymentController {
@@ -52,10 +51,13 @@ public class PaymentController {
     public ResponseEntity<?> addPayments(
         @NotEmpty(message = "Payments cannot be empty") @RequestBody List<@Valid PaymentRequest> payments) {
 
-        payments.forEach(paymentService::postPayment);
-            return ResponseEntity.ok()
+        return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body( new PaymentPostedDto("Added successfully!"));
+                .body(
+                        payments.stream()
+                        .map(paymentRequest -> paymentService.postPayment(paymentRequest))
+                        .collect(Collectors.toList())
+                );
     }
 }
 

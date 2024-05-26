@@ -1,6 +1,7 @@
 package account;
 
 import account.authority.Role;
+import account.payment.request.PaymentRequest;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,9 @@ import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.List;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -129,6 +133,21 @@ public class PaymentControllerIntTest {
             .andDo(print())
             .andExpect(status().isOk());
     }
+
+    @Test
+    @Rollback
+    @WithMockUser (username = ACCOUNTANT_USERNAME, roles = {Role.ACCOUNTANT})
+    void apiEmplPayment_addingSinglePayments_returnHttp200() throws Exception{
+        List<PaymentRequest> payments = List.of(
+                new PaymentRequest("tabbish.aziz@acme.com", "09-2021", 123456L)
+        );
+        mockMvc.perform(post(API_ACCT_PAYMENTS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(payments)))
+                .andDo(print())
+                .andExpect(status().isOk());
+    }
+
     @Test
     @Rollback
     @WithMockUser (username = ACCOUNTANT_USERNAME, roles = {Role.ACCOUNTANT})
@@ -145,9 +164,5 @@ public class PaymentControllerIntTest {
     }
 
     //PUT
-    @Test
-    @Rollback
-    @WithMockUser (username = ACCOUNTANT_USERNAME, roles = {Role.ACCOUNTANT})
-    void apiEmplPayment_addingMultiplePayments_returnHttp200() throws Exception{}
 
 }

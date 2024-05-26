@@ -1,2 +1,6 @@
 rootProject.name = 'Account_Service_Build'
+include 'pension'
+include 'user'
+include 'authority'
+include 'payment'
 

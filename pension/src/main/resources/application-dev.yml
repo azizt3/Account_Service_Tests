@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    username: postgres
+    password: password
+    url: jpa:postgresql://localhost:5432/users
+  sql:
+    init:
+      mode: always

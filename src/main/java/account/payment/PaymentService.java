@@ -1,34 +1,45 @@
 package account.payment;
 
-import account.payment.request.PaymentRequest;
-import account.user.UserService;
-import account.payment.dto.PaymentDto;
-import account.payment.dto.PaymentPostedDto;
-import account.user.UserAdapter;
-import account.user.User;
 import account.exceptionhandling.InvalidPaymentException;
 import account.exceptionhandling.NotFoundException;
 import account.exceptionhandling.PaymentExistsException;
+import account.payment.dto.PaymentDto;
+import account.payment.dto.PaymentPostedDto;
+import account.payment.dto.PaymentUpdatedDto;
+import account.payment.dto.PensionContributionDto;
+import account.payment.request.PaymentRequest;
+import account.user.User;
+import account.user.UserAdapter;
+import account.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import static org.springframework.web.reactive.function.client.ExchangeFilterFunctions.basicAuthentication;
+
 @Service
 public class PaymentService {
 
     PaymentRepository paymentRepository;
     UserService userService;
+    WebClient webClient;
 
     @Autowired
     public PaymentService (PaymentRepository paymentRepository, UserService userService) {
         this.paymentRepository = paymentRepository;
         this.userService = userService;
+        this.webClient = WebClient.builder()
+                .filter(basicAuthentication())
+                .baseUrl("http://localhost:8081").build();
     }
 
     //Business logic
@@ -63,18 +74,28 @@ public class PaymentService {
         validatePaymentAdd(payments);
         Payment payment = new Payment(payments.employee(), payments.period(), payments.salary());
         paymentRepository.save(payment);
-        return new PaymentPostedDto("Added Successfully");
+        PensionContributionDto pensionContribution = handlePensionContribution(payments).block();
+        return new PaymentPostedDto("Added Successfully", Long.toString(pensionContribution.balance()));
+    }
+
+    public Mono<PensionContributionDto> handlePensionContribution(PaymentRequest payment) {
+        return webClient.put()
+                .uri("/api/auth/pension/payment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(payment)
+                .retrieve()
+                .bodyToMono(PensionContributionDto.class);
     }
 
     @Transactional
-    public PaymentPostedDto handlePaymentUpdate(PaymentRequest payment) {
+    public PaymentUpdatedDto handlePaymentUpdate(PaymentRequest payment) {
         userService.validateUserExists(payment.employee());
         validatePaymentPositive(payment.salary());
         Payment updatedPayment = paymentRepository.findByEmployeeAndPeriod(payment.employee(), payment.period())
                 .orElseThrow(() -> new NotFoundException("Payment does not exist for this pay period"));
         updatedPayment.setSalary(payment.salary());
         paymentRepository.save(updatedPayment);
-        return new PaymentPostedDto("Added successfully!");
+        return new PaymentUpdatedDto("Added successfully!");
     }
 
     public PaymentDto buildPaymentDto(Payment payment, UserAdapter user) {

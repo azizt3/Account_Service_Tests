@@ -1,4 +1,7 @@
+import account.payment.Payment;
 import account.payment.PaymentService;
+import account.payment.dto.PaymentPostedDto;
+import account.payment.request.PaymentRequest;
 import account.user.UserService;
 import account.user.dto.UserDto;
 import account.user.User;
@@ -6,10 +9,14 @@ import account.payment.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentServiceTest {
@@ -21,6 +28,9 @@ public class PaymentServiceTest {
 
     @Mock
     public UserService userService;
+
+    @Mock
+    public WebClient webClient;
 
     @BeforeEach
     void setUp() { paymentService = new PaymentService(paymentRepository, userService);
@@ -124,7 +134,12 @@ public class PaymentServiceTest {
     //public PaymentPostedDto postPayment (PaymentRequest payments)
 
     @Test
-    void givenPaymentRequest_whenUpdatingPayment_thenNotifyUserOfChange(){}
+    void givenPaymentRequest_whenUpdatingPayment_thenNotifyUserOfChange(){
+        PaymentRequest payments = new PaymentRequest("tabbish.aziz@acme.com", "01-2024", 3000L);
+        when(paymentRepository.save(any(Payment.class))).thenReturn(new Payment());
+        PaymentPostedDto postedPayment = paymentService.postPayment(payments);
+        verify(paymentRepository, times(1)).save(any(Payment.class));
+    }
 
     @Test
     void givenPaymentRequest_whenUpdatingPayment_thenVerifyPaymentPosted(){}

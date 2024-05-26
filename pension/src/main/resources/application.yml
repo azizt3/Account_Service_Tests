@@ -1,0 +1,18 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+
+  info:
+    env:
+      enabled: true
+  application:
+    name: pension-manager
+    description: pension manager application with basic CRUD functionality
+    author: tabbish aziz
+    version: 1
+
+spring:
+  profiles:
+    active: dev
