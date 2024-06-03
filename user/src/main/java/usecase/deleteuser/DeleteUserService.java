@@ -8,13 +8,13 @@ import exceptions.InvalidChangeException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import static utils.UserHelper.loadUser;
+import utils.UserHelper;
 
 @Service
 public class DeleteUserService {
 
     UserRepository userRepository;
+    UserHelper userHelper;
 
     @Autowired
     public DeleteUserService(UserRepository userRepository) {
@@ -23,7 +23,7 @@ public class DeleteUserService {
 
     @Transactional
     public UserDeletedDto handleUserDelete(String email) {
-        User user = loadUser(email);
+        User user = userHelper.loadUser(email);
         if (user.getRoles().contains("ADMINISTRATOR")) {
             throw new InvalidChangeException(ErrorMessage.REMOVING_ADMIN_ROLE);
         }

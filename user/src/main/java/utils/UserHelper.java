@@ -7,31 +7,51 @@ import exceptions.ErrorMessage;
 import exceptions.InsufficientPasswordException;
 import exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+import usecase.createuser.UserRegistrationRequest;
 
 import java.util.Comparator;
 import java.util.List;
 
+import static utils.BreachedPasswords.isBreached;
+
 @Component
 public class UserHelper {
 
-    private static UserRepository userRepository;
+    UserRepository userRepository;
+    UserFacade userFacade;
 
     @Autowired
-    public UserHelper (UserRepository userRepository) {
+    public UserHelper (UserRepository userRepository, UserFacade userFacade) {
         this.userRepository = userRepository;
+        this.userFacade = userFacade;
     }
 
-    public static User loadUser (String email) {
+    public User loadUser (String email) {
         return userRepository.findByEmail(email.toLowerCase())
             .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND));
     }
 
-    public static boolean userExists(String email){
+    public boolean userExists(String email){
         return userRepository.existsByEmail(email);
     }
 
-    public static UserDto buildUserDto(User user) {
+    public User buildUser(UserRegistrationRequest newUser) {
+
+        User user = new User(
+            newUser.name(),
+            newUser.lastname(),
+            newUser.email().toLowerCase(),
+            new BCryptPasswordEncoder().encode(newUser.password()),
+            userFacade.getDefaultAuthority()
+        );
+
+        return user;
+    }
+
+    public UserDto buildUserDto(User user) {
         return new UserDto(
             user.getId(),
             user.getName(),
@@ -40,7 +60,7 @@ public class UserHelper {
             user.getRoles().toArray(new String[0]));
     }
 
-    public static UserDto[] buildUserDtoArray(List<User> users){
+    public UserDto[] buildUserDtoArray(List<User> users){
         return users.stream()
             .map(user -> buildUserDto(user))
             .sorted(Comparator.comparing(UserDto::id))
@@ -48,9 +68,21 @@ public class UserHelper {
             .toArray(new UserDto[0]);
     }
 
-    public static void validatePasswordLength(String newPassword) {
+    public void validatePasswordLength(String newPassword) {
         if (newPassword.length() < 12) {
             throw new InsufficientPasswordException(ErrorMessage.PASSWORD_TOO_SHORT);
         }
+    }
+
+    public void validatePasswordBreached(String newPassword){
+        if(isBreached(newPassword)){
+            throw new InsufficientPasswordException(ErrorMessage.BREACHED_PASSWORD);
+        };
+    }
+
+    public static String getUserName(){
+        return SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getName();
     }
 }

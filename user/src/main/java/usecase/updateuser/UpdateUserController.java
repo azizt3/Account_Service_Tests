@@ -18,6 +18,10 @@ public class UpdateUserController {
     @Autowired
     UpdateUserService updateUserService;
 
+    public UpdateUserController(UpdateUserService updateUserService) {
+        this.updateUserService = updateUserService;
+    }
+
     @PutMapping(path = "/api/admin/user/role", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> setRoles(@RequestBody @Valid RoleChangeRequest request) {
         return ResponseEntity.ok()

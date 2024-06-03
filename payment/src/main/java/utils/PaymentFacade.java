@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PaymentFacade {
 
-    private static UserHelper userHelper;
+    private UserHelper userHelper;
 
     public boolean userExists(String email) {
         return userHelper.userExists(email);

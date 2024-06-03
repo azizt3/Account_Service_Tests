@@ -1,5 +1,6 @@
 package entity;
 
+import exceptions.InvalidPaymentException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -31,6 +32,15 @@ public class Payment {
     public Payment(String employee, String period, Long salary){
         this.employee = employee;
         this.period = period;
+        this.salary = salary;
+    }
+
+    private void validatePaymentAmount(Long salary){
+        if (salary < 0) throw new InvalidPaymentException("Salary cannot be negative!");
+    }
+
+    public void updatePayment(Long salary){
+        validatePaymentAmount(salary);
         this.salary = salary;
     }
 

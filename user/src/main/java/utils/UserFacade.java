@@ -1,25 +1,31 @@
 package utils;
 
+import database.UserRepository;
 import entity.Authority;
 import org.springframework.stereotype.Component;
 import usecase.AuthorityService;
 
-import java.util.Set;
-
 @Component
 public class UserFacade {
 
-    private static AuthorityService authorityService;
+    private AuthorityService authorityService;
+    private UserRepository userRepository;
 
-    public static Authority getAuthorityFromRole(String role){
+    public UserFacade(AuthorityService authorityService, UserRepository userRepository){
+        this.authorityService = authorityService;
+        this.userRepository = userRepository;
+    }
+
+    public Authority getAuthorityFromRole(String role){
         return authorityService.getAuthoritybyRole(role);
     }
 
-    public static boolean roleExists(String role){
+    public boolean roleExists(String role){
         return authorityService.roleExists(role);
     }
 
-    public static Set<Authority> getDefaultAuthority(long numberOfUsers){
+    public Authority getDefaultAuthority(){
+        long numberOfUsers = userRepository.count();
         return authorityService.getDefaultAuthority(numberOfUsers);
     }
 }

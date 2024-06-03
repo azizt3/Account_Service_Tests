@@ -28,7 +28,7 @@ public class PensionServiceUnitTest {
 
     @Test
     void givenPaymentDetails_whenMakingContribution_thenVerifyPensionRepositoryInvokedOnce(){
-        PaymentRequest payment = new PaymentRequest("tabbish.aziz@acme.com", "01-2024", "300000");
+        PaymentRequest payment = new PaymentRequest("tabbish.aziz@acme.com", "01-2024", 300000L);
         Pension mockPension = new Pension(  "tabbish.aziz@acme.com", "DC", 150000L, 8L);
         when(pensionRepository.findByEmail("tabbish.aziz@acme.com")).thenReturn(Optional.of(mockPension));
         PensionContributionDto pension = pensionService.makeContribution(payment);
@@ -37,7 +37,7 @@ public class PensionServiceUnitTest {
 
     @Test
     void givenPaymentDetails_whenMakingContribution_thenReturnPensionDetails(){
-        PaymentRequest payment = new PaymentRequest("tabbish.aziz@acme.com", "01-2024", "300000");
+        PaymentRequest payment = new PaymentRequest("tabbish.aziz@acme.com", "01-2024", 300000L);
         Pension mockPension = new Pension(  "tabbish.aziz@acme.com", "DC", 150000L, 8L);
         Pension updatedPension = new Pension ("tabbish.aziz@acme.com", "DC", 150240L, 8L);
 

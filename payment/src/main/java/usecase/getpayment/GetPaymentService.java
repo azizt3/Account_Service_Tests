@@ -4,7 +4,6 @@ import database.PaymentRepository;
 import dto.PaymentDto;
 import dto.UserDto;
 import entity.Payment;
-import exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,8 +15,7 @@ import java.text.ParseException;
 import java.util.List;
 
 import static org.springframework.web.reactive.function.client.ExchangeFilterFunctions.basicAuthentication;
-import static utils.PaymentHelper.formatPeriod;
-import static utils.PaymentHelper.formatSalary;
+import static utils.PaymentHelper.*;
 
 @Service
 public class GetPaymentService {
@@ -35,8 +33,7 @@ public class GetPaymentService {
 
     protected PaymentDto handleGetPayment(String period) throws ParseException {
         String username = getAuthenticatedUser();
-        Payment payment = paymentRepository.findByEmployeeAndPeriod(username, period)
-            .orElseThrow(() -> new NotFoundException("Payment does not exist for this pay period"));
+        Payment payment = findPayment(username, period);
         UserDto user = getUserInfo(username).block();
         return buildPaymentDto(payment, user);
     }

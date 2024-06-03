@@ -3,62 +3,50 @@ package usecase.updateuser;
 import database.UserRepository;
 import dto.UpdateSuccessfulDto;
 import dto.UserDto;
+import entity.Authority;
 import entity.User;
 import exceptions.ErrorMessage;
-import exceptions.InsufficientPasswordException;
 import exceptions.NotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import utils.BreachedPasswords;
+import utils.UserFacade;
+import utils.UserHelper;
 
-import static utils.UserFacade.roleExists;
-import static utils.UserHelper.*;
+import static utils.UserHelper.getUserName;
 
 @Service
 public class UpdateUserService {
 
     UserRepository userRepository;
-
-    BreachedPasswords breachedPasswords;
-    @Bean
-    BCryptPasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(13); }
+    UserHelper userHelper;
+    UserFacade userFacade;
 
     @Autowired
-    public UpdateUserService(UserRepository userRepository, BreachedPasswords breachedPasswords) {
+    public UpdateUserService(UserRepository userRepository, UserHelper userHelper, UserFacade userFacade) {
         this.userRepository = userRepository;
-        this.breachedPasswords = breachedPasswords;
+        this.userHelper = userHelper;
+        this.userFacade = userFacade;
     }
 
     public UserDto handleRoleChange(RoleChangeRequest request){
-        if (!roleExists(request.role())) throw new NotFoundException(ErrorMessage.ROLE_NOT_FOUND);
-        User user = loadUser(request.user());
-        if (request.operation().equalsIgnoreCase("grant")) user.addAuthority(request.role());
-        if (request.operation().equalsIgnoreCase("remove")) user.removeAuthority(request.role());
-        else throw new NotFoundException("Operation Doesn't Exist");
+        if (!userFacade.roleExists(request.role())) throw new NotFoundException(ErrorMessage.ROLE_NOT_FOUND);
+        User user = userHelper.loadUser(request.user());
+        Authority authority = userFacade.getAuthorityFromRole(request.role());
+        if (request.operation() == "grant") {user.addAuthority(authority);}
+        if (request.operation() == "remove") user.removeAuthority(authority);
         userRepository.save(user);
-        return buildUserDto(user);
+        return userHelper.buildUserDto(user);
     }
 
     @Transactional
     public UpdateSuccessfulDto updatePassword(String newPassword) {
-        String userName = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+        userHelper.validatePasswordBreached(newPassword);
+        String userName = getUserName();
 
-        User user =  loadUser((userName));
-        validatePasswordLength(newPassword);
-        if (passwordEncoder().matches(newPassword, user.getPassword())) {
-            throw new InsufficientPasswordException(ErrorMessage.PASSWORD_NOT_UNIQUE);
-        }
-        breachedPasswords.validatePasswordBreached(newPassword);
-        user.setPassword(passwordEncoder().encode(newPassword));
+        User user =  userHelper.loadUser((userName));
+        user.changePassword(newPassword);
         userRepository.save(user);
         return new UpdateSuccessfulDto(user.getEmail(), "The password has been updated successfully");
     }
-
-
 }

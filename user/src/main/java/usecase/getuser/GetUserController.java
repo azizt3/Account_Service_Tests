@@ -14,6 +14,10 @@ public class GetUserController {
     @Autowired
     GetUserService getUserService;
 
+    public GetUserController(GetUserService getUserService) {
+        this.getUserService = getUserService;
+    }
+
     @GetMapping(path = "/api/admin/user/")
     public ResponseEntity<?> getUsers(@AuthenticationPrincipal UserAdapter user) {
         return ResponseEntity.ok()
@@ -27,5 +31,6 @@ public class GetUserController {
             .contentType(MediaType.APPLICATION_JSON)
             .body(getUserService.handleGetUser(email));
     }
+
 
 }

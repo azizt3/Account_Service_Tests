@@ -3,11 +3,11 @@ package usecase.updatepayment;
 import database.PaymentRepository;
 import dto.PaymentUpdatedDto;
 import entity.Payment;
-import exceptions.InvalidPaymentException;
-import exceptions.NotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import usecase.addpayment.PaymentRequest;
+
+import static utils.PaymentHelper.findPayment;
 
 @Service
 public class UpdatePaymentService {
@@ -19,12 +19,10 @@ public class UpdatePaymentService {
     }
 
     @Transactional
-    public PaymentUpdatedDto handlePaymentUpdate(PaymentRequest payment) {
-        if (payment.salary() < 0) throw new InvalidPaymentException("Salary cannot be negative!");
-        Payment updatedPayment = paymentRepository.findByEmployeeAndPeriod(payment.employee(), payment.period())
-            .orElseThrow(() -> new NotFoundException("Payment does not exist for this pay period"));
-        updatedPayment.setSalary(payment.salary());
-        paymentRepository.save(updatedPayment);
+    public PaymentUpdatedDto handlePaymentUpdate(PaymentRequest paymentRequest) {
+        Payment payment = findPayment(paymentRequest.employee(), paymentRequest.period());
+        payment.updatePayment(paymentRequest.salary());
+        paymentRepository.save(payment);
         return new PaymentUpdatedDto("Added successfully!");
     }
 }

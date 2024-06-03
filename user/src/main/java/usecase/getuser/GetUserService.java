@@ -11,28 +11,28 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import static utils.UserHelper.buildUserDto;
-import static utils.UserHelper.buildUserDtoArray;
+import utils.UserHelper;
 
 @Service
 public class GetUserService implements UserDetailsService {
 
     UserRepository userRepository;
+    UserHelper userHelper;
 
     @Autowired
-    public GetUserService(UserRepository userRepository) {
+    public GetUserService(UserRepository userRepository, UserHelper userHelper) {
         this.userRepository = userRepository;
+        this.userHelper = userHelper;
     }
 
     //Business Logic
     public UserDto[] handleGetUsers(){
         if (userRepository.count() == 0) return new UserDto[]{};
-        return buildUserDtoArray(userRepository.findAll());
+        return userHelper.buildUserDtoArray(userRepository.findAll());
     }
 
     public UserDto handleGetUser(String email){
-        return buildUserDto(userRepository.findByEmail(email)
+        return userHelper.buildUserDto(userRepository.findByEmail(email)
             .orElseThrow(() -> new NotFoundException(ErrorMessage.USER_NOT_FOUND)));
     }
 

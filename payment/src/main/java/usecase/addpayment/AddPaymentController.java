@@ -13,14 +13,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-public class AddPaymentControler {
+public class AddPaymentController {
 
     AddPaymentService addPaymentService;
 
     @Autowired
-    public AddPaymentControler(AddPaymentService addPaymentService){
+    public AddPaymentController(AddPaymentService addPaymentService){
         this.addPaymentService = addPaymentService;
     }
+
     @PostMapping(path = "/api/acct/payments")
     public ResponseEntity<?> addPayments(
         @NotEmpty(message = "Payments cannot be empty") @RequestBody List<@Valid PaymentRequest> payments) {

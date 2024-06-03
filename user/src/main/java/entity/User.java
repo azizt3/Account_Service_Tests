@@ -1,19 +1,19 @@
 package entity;
 
+import com.google.common.collect.Sets;
 import exceptions.ErrorMessage;
+import exceptions.InsufficientPasswordException;
 import exceptions.InvalidChangeException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static utils.UserFacade.getAuthorityFromRole;
-
 
 @Entity
 @Table(name = "users" )
@@ -47,8 +47,7 @@ public class User {
         name="user_authorities",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name ="authority_id"))
-    private Set<Authority> authorities = new LinkedHashSet<Authority>();
-
+    private Set<Authority> authorities = new HashSet<>();
 
     public User() {
     }
@@ -61,6 +60,14 @@ public class User {
         this.authorities = authorities;
     }
 
+    public User(String name, String lastname, String email, String password, Authority authorities) {
+        this.name = name;
+        this.lastname = lastname;
+        this.email = email;
+        this.password = password;
+        this.authorities = Sets.newHashSet(authorities);
+    }
+
     public User(Long id, String name, String lastname, String email, String password, Set<Authority> authorities) {
         this.id = id;
         this.name = name;
@@ -70,49 +77,28 @@ public class User {
         this.authorities = authorities;
     }
 
-    public String getName() {
-        return name;
+    public String getEmail() {
+        return email;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getName() {
+        return name;
     }
 
     public String getLastname() {
         return lastname;
     }
 
-    public void setLastname(String lastname) {
-        this.lastname = lastname;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public Long getId() {
         return id;
     }
-
-    public void setId(Long id){ this.id = id;}
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
     public Set<Authority> getAuthorities() {
         return authorities;
-    }
-    public void setAuthorities(Set<Authority> authorities) {
-        this.authorities = authorities;
     }
 
     public List<String> getRoles() {
@@ -122,19 +108,35 @@ public class User {
             .sorted()
             .toList();
     }
-    public void addAuthority(String role){
-        Authority newAuthority = getAuthorityFromRole(role);
 
+    private void validatePasswordLength(String newPassword) {
+        if (newPassword.length() < 12) {
+            throw new InsufficientPasswordException(ErrorMessage.PASSWORD_TOO_SHORT);
+        }
+    }
+
+    public void changePassword(String newPassword) {
+        validatePasswordLength(newPassword);
+        if (new BCryptPasswordEncoder().matches(newPassword, password)) {
+            throw new InsufficientPasswordException(ErrorMessage.PASSWORD_NOT_UNIQUE);
+        }
+        this.password = new BCryptPasswordEncoder().encode(newPassword);
+    }
+
+    public void addAuthority(Authority newAuthority){
+        validateNoRoleConflict(newAuthority);
+        authorities.add(newAuthority);
+    }
+
+    private void validateNoRoleConflict(Authority newAuthority) {
         for (Authority authority:this.authorities) {
             if (!authority.getRoleGroup().equalsIgnoreCase(newAuthority.getRoleGroup()))
                 throw new InvalidChangeException(ErrorMessage.CONFLICTING_ROLE_ASSIGNMENT);
         }
-        this.authorities.add(newAuthority);
     }
 
-    public void removeAuthority(String role){
-        Authority authorityToRemove = getAuthorityFromRole(role);
-        if (role.equalsIgnoreCase("administrator")) {
+    public void removeAuthority(Authority authorityToRemove){
+        if (authorityToRemove.getRole().equalsIgnoreCase("administrator")) {
             throw new InvalidChangeException(ErrorMessage.REMOVING_ADMIN_ROLE);
         }
         if(this.authorities.contains(authorityToRemove)){
@@ -148,5 +150,4 @@ public class User {
                 .filter(authority -> !authority.equals(authorityToRemove))
                 .collect(Collectors.toSet());
     }
-
 }

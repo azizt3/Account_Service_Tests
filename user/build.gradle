@@ -20,7 +20,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation group: 'org.hibernate', name: 'hibernate-validator', version: '6.1.0.Final'
     implementation 'org.projectlombok:lombok:1.18.26'
-    implementation project(path: ':authority')
+    implementation 'com.google.guava:guava:33.2.0-jre'
+    testImplementation project(path: ':')
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     runtimeOnly 'org.postgresql:postgresql'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

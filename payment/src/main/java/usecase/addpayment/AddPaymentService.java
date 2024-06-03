@@ -4,7 +4,6 @@ import database.PaymentRepository;
 import dto.PaymentPostedDto;
 import dto.PensionContributionDto;
 import entity.Payment;
-import exceptions.InvalidPaymentException;
 import exceptions.NotFoundException;
 import exceptions.PaymentExistsException;
 import jakarta.transaction.Transactional;
@@ -13,15 +12,16 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import utils.PaymentFacade;
 
 import static org.springframework.web.reactive.function.client.ExchangeFilterFunctions.basicAuthentication;
-import static utils.UserHelper.userExists;
 
 @Service
 public class AddPaymentService {
 
     PaymentRepository paymentRepository;
     WebClient webClient;
+    PaymentFacade paymentFacade;
 
     @Autowired
     public AddPaymentService (PaymentRepository paymentRepository) {
@@ -32,10 +32,12 @@ public class AddPaymentService {
     }
 
     @Transactional
-    public PaymentPostedDto postPayment (PaymentRequest payments) {
-        validatePaymentAdd(payments);
-        paymentRepository.save(new Payment(payments.employee(), payments.period(), payments.salary()));
-        PensionContributionDto pensionContribution = handlePensionContribution(payments).block();
+    public PaymentPostedDto postPayment (PaymentRequest payment) {
+        validateUniquePayment(payment);
+        if (!paymentFacade.userExists(payment.employee())) throw new NotFoundException("");
+
+        paymentRepository.save(new Payment(payment.employee(), payment.period(), payment.salary()));
+        PensionContributionDto pensionContribution = handlePensionContribution(payment).block();
         return new PaymentPostedDto("Added Successfully", Long.toString(pensionContribution.balance()));
     }
 
@@ -48,13 +50,9 @@ public class AddPaymentService {
             .bodyToMono(PensionContributionDto.class);
     }
 
-
-    public void validatePaymentAdd(PaymentRequest payment){
-        if (payment.salary() < 0) throw new InvalidPaymentException("Salary cannot be negative!");
+    private void validateUniquePayment(PaymentRequest payment){
         if (paymentRepository.existsByEmployeeAndPeriod(payment.employee(), payment.period())) {
             throw new PaymentExistsException("Cannot add duplicate payment");
         }
-        if (userExists(payment.employee())) throw new NotFoundException("");
     }
-
 }

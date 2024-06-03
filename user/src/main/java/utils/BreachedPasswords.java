@@ -1,7 +1,5 @@
 package utils;
 
-import exceptions.ErrorMessage;
-import exceptions.InsufficientPasswordException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -10,13 +8,13 @@ import java.util.List;
 @Component
 public class BreachedPasswords {
 
-    private final List<String> breachedPasswords;
+    private static List<String> breachedPasswords;
 
-    BCryptPasswordEncoder passwordEncoder() {
+    static BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(13);
     }
 
-    private BreachedPasswords(List<String> breachedPasswords) {
+    BreachedPasswords(List<String> breachedPasswords) {
         List<String> passwords = List.of(
             "PasswordForJanuary",
             "PasswordForFebruary",
@@ -32,20 +30,15 @@ public class BreachedPasswords {
             "PasswordForDecember"
         );
 
-        this.breachedPasswords =  passwords.stream()
+        this.breachedPasswords = passwords.stream()
             .map(password -> passwordEncoder().encode(password))
             .toList();
     }
 
-    public List<String> getBreachedPasswords() {
-        return breachedPasswords;
-    }
-
-    public void validatePasswordBreached (String newPassword){
+    public static boolean isBreached(String newPassword) {
         for (String pass : breachedPasswords) {
-            if (passwordEncoder().matches(newPassword, pass)) {
-                throw new InsufficientPasswordException(ErrorMessage.BREACHED_PASSWORD);
-            }
+            if (passwordEncoder().matches(newPassword, pass))  return true;
         }
+        return false;
     }
 }
