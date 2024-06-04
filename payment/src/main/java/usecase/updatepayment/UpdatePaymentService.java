@@ -4,6 +4,7 @@ import database.PaymentRepository;
 import dto.PaymentUpdatedDto;
 import entity.Payment;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import usecase.addpayment.PaymentRequest;
 
@@ -14,6 +15,8 @@ public class UpdatePaymentService {
 
     PaymentRepository paymentRepository;
 
+
+    @Autowired
     public UpdatePaymentService (PaymentRepository paymentRepository){
         this.paymentRepository = paymentRepository;
     }

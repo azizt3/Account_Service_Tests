@@ -1,27 +1,24 @@
 package account;
 
-import account.authority.Role;
-import account.authority.Authority;
-import account.payment.Payment;
-import account.user.User;
-import account.authority.AuthorityRepository;
-import account.payment.PaymentRepository;
-import account.user.UserRepository;
+import database.AuthorityRepository;
+import database.PaymentRepository;
+import database.UserRepository;
+import dto.Role;
+import entity.Authority;
+import entity.Payment;
+import entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-
 @Component
-public class DataLoader {
+public class DataLoader implements CommandLineRunner{
 
-    private AuthorityRepository authorityRepository;
-    private UserRepository userRepository;
-    private PaymentRepository paymentRepository;
 
+    private final AuthorityRepository authorityRepository;
+    private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
 
     @Autowired
     public DataLoader (AuthorityRepository authorityRepository, UserRepository userRepository, PaymentRepository paymentRepository) {
@@ -42,25 +39,25 @@ public class DataLoader {
     public void createUsers(){
             try{
                 userRepository.save(new User(
-                        "tabbish",
-                        "aziz",
-                        "tabbish.aziz@acme.com",
-                        new BCryptPasswordEncoder(13).encode("Canada2024!!"),
-                    null
+                    "tabbish",
+                    "aziz",
+                    "tabbish.aziz@acme.com",
+                    new BCryptPasswordEncoder(13).encode("Canada2024!!"),
+                    new Authority(Role.ADMINISTRATOR, "ADMINISTRATIVE")
                 ));
                 userRepository.save(new User(
                         "Monkey",
                         "D-Luffy",
                         "luffy@acme.com",
                     new BCryptPasswordEncoder(13).encode("Laughtale2024!!"),
-                    null
+                    new Authority(Role.ACCOUNTANT, "BUSINESS_USER")
                 ));
                 userRepository.save(new User(
                         "donquixote",
                         "doflamingo",
                         "doffy@acme.com",
                     new BCryptPasswordEncoder(13).encode("Dressrosa2024!!"),
-                    null
+                    new Authority(Role.USER, "BUSINESS_USER")
                 ));
             } catch (Exception e) {}
     }
@@ -84,7 +81,7 @@ public class DataLoader {
         catch(Exception e){}
     }
 
-    public void assignAuthorities(){
+    /*public void assignAuthorities(){
         User adminUser = userRepository.findByEmail("tabbish.aziz@acme.com")
             .orElseThrow();
 
@@ -105,22 +102,69 @@ public class DataLoader {
             .orElseThrow();
 
 
-        adminUser.setAuthorities(Set.of(adminAuthority));
+       adminUser.setAuthorities(Set.of(adminAuthority));
         userRepository.save(adminUser);
         accountantUser.setAuthorities(Set.of(accountantAuthority));
         userRepository.save(accountantUser);
         user.setAuthorities(Set.of(userAuthority));
         userRepository.save(user);
-    }
+    }*/
 
-    @Bean
+    /*@Bean
     public CommandLineRunner loadData(UserRepository userRepository)    {
         return (args) -> {
             createAuthorities();
             createUsers();
             createPayments();
-            assignAuthorities();
         };
+    }*/
+
+
+    @Override
+    public void run(String... args) throws Exception {
+        //createAuthorities();
+        //createUsers();
+        //createPayments();
+
+        authorityRepository.save(new Authority(Role.ADMINISTRATOR, "ADMINISTRATIVE"));
+        authorityRepository.save(new Authority(Role.ACCOUNTANT, "BUSINESS_USER"));
+        authorityRepository.save(new Authority(Role.USER, "BUSINESS_USER"));
+
+        userRepository.save(new User(
+            "tabbish",
+            "aziz",
+            "tabbish.aziz@acme.com",
+            new BCryptPasswordEncoder(13).encode("Canada2024!!"),
+            new Authority(Role.ADMINISTRATOR, "ADMINISTRATIVE")
+        ));
+        userRepository.save(new User(
+            "Monkey",
+            "D-Luffy",
+            "luffy@acme.com",
+            new BCryptPasswordEncoder(13).encode("Laughtale2024!!"),
+            new Authority(Role.ACCOUNTANT, "BUSINESS_USER")
+        ));
+        userRepository.save(new User(
+            "donquixote",
+            "doflamingo",
+            "doffy@acme.com",
+            new BCryptPasswordEncoder(13).encode("Dressrosa2024!!"),
+            new Authority(Role.USER, "BUSINESS_USER")
+        ));
+
+        paymentRepository.save(new Payment("tabbish.aziz@acme.com", "01-2021", 123456L));
+        paymentRepository.save(new Payment("tabbish.aziz@acme.com", "02-2021", 123456L));
+        paymentRepository.save(new Payment("tabbish.aziz@acme.com", "03-2021", 123456L));
+        paymentRepository.save(new Payment("tabbish.aziz@acme.com", "04-2021", 123456L));
+        paymentRepository.save(new Payment("tabbish.aziz@acme.com", "05-2021", 123456L));
+        paymentRepository.save(new Payment("tabbish.aziz@acme.com", "06-2021", 123456L));
+        paymentRepository.save(new Payment("tabbish.aziz@acme.com", "07-2021", 123456L));
+        paymentRepository.save(new Payment("doffy@acme.com", "01-2021", 123456L));
+        paymentRepository.save(new Payment("doffy@acme.com", "02-2021", 123456L));
+        paymentRepository.save(new Payment("luffy@acme.com", "03-2021", 123456L));
+        paymentRepository.save(new Payment("luffy@acme.com", "04-2021", 123456L));
+        paymentRepository.save(new Payment("luffy@acme.com", "05-2021", 123456L));
+
     }
 
     /*@Override

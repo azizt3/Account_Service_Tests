@@ -3,4 +3,5 @@ include 'pension'
 include 'user'
 include 'authority'
 include 'payment'
+include 'accountserviceapplication'
 
